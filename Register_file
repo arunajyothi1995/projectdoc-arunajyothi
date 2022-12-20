@@ -1,0 +1,23 @@
+module register_file ( input clk, input reset,
+input RegWrite,
+input [4:0] read_addr1, read_addr2, input [4:0] write_addr, input [31:0] write_data,
+output [31:0] read_data1, read_data2);
+reg [31:0] register_file [31:0]; integer k;
+assign read_data1 = register_file[read_addr1]; assign read_data2 = register_file[read_addr2];
+always @(posedge clk or posedge reset) begin
+// Async reset sets all register content to 0 if (reset == 1)
+begin for (k=0; k<32; k=k+1)
+begin register_file[k] = 32'b0;
+end end
+// Write on rising edge if RegWrite control is set else if (RegWrite == 1) register_file[write_addr] = write_data;   end
+endmodule
+// Sign extends immediate operand from 16-bit to 32-bit value
+module sign_extender(
+input [15:0] in, output [31:0] out);
+assign out = {{16{in[15]}}, in};
+endmodule
+// Shift left by 2 for jump instruction - word address
+module left_shifter_jump (
+input [25:0] in, output [27:0] out);
+assign out = {in[25:0],1'b0,1'b0};
+endmodule

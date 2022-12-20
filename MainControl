@@ -1,0 +1,82 @@
+module main_control ( input [5:0] op_code,
+output RegDst, Jump, Branch, MemRead, MemtoReg, MemWrite, ALUSrc, RegWrite,
+output [1:0] ALU_op);
+// Opcodes for which  control signal is active
+assign RegDst
+=(~op_code[5])&(~op_code[4])&(~op_code[3])&(~op_code[2])&(~op_code[1])&(~op_cod e [0]); // 000000
+assign Jump
+=(~op_code[5])&(~op_code[4])&(~op_code[3])&(~op_code[2])&(op_code[1])&(~op_code [ 0]); // 000010
+assign Branch
+=(~op_code[5])&(~op_code[4])&(~op_code[3])&(op_code[2])&(~op_code[1])&(~op_code [ 0]); // 000100
+assign MemRead
+=(op_code[5])&(~op_code[4])&(~op_code[3])&(~op_code[2])&(op_code[1])&(op_code[0] ) ; // 100011
+assign MemtoReg
+=(op_code[5])&(~op_code[4])&(~op_code[3])&(~op_code[2])&(op_code[1])&(op_code[0] ) ; // 100011
+assign MemWrite
+=(op_code[5])&(~op_code[4])&(op_code[3])&(~op_code[2])&(op_code[1])&(op_code[0]); // 101011
+assign ALUSrc =
+((~op_code[5])&(~op_code[4])&(op_code[3])&(~op_code[2])&(~op_code[1])&(~op_code[
+0 ])) | // 001000
+((~op_code[5])&(~op_code[4])&(op_code[3])&(op_code[2])&(~op_code[1])&(~op_code[0
+] )) | // 001100
+((op_code[5])&(~op_code[4])&(~op_code[3])&(~op_code[2])&(op_code[1])&(op_code[0])) | // 100011 (((op_code[5])&(~op_code[4])&(op_code[3])&(~op_code[2])&(op_code[1])&(op_code[0])
+) ) | // 101011
+((~op_code[5])&(~op_code[4])&(op_code[3])&(op_code[2])&(~op_code[1])&(op_code[0])) | // 001101
+(((~op_code[5])&(~op_code[4])&(op_code[3])&(~op_code[2])&(op_code[1])&(~op_code[ 0 ]))); // 001010
+assign RegWrite =
+(~op_code[5])&(~op_code[4])&(~op_code[3])&(~op_code[2])&(~op_code[1])&(~op_code
+[ 0]) | // 000000
+((~op_code[5])&(~op_code[4])&(op_code[3])&(~op_code[2])&(~op_code[1])&(~op_code[
+0 ])) | // 001000
+((~op_code[5])&(~op_code[4])&(op_code[3])&(op_code[2])&(~op_code[1])&(~op_code[0
+] )) | // 001100
+((op_code[5])&(~op_code[4])&(~op_code[3])&(~op_code[2])&(op_code[1])&(op_code[0])) | // 100011
+((~op_code[5])&(~op_code[4])&(op_code[3])&(op_code[2])&(~op_code[1])&(op_code[0])) | // 001101
+((~op_code[5])&(~op_code[4])&(op_code[3])&(~op_code[2])&(op_code[1])&(~op_code[0
+] )); // 001010
+assign ALU_op[1] =
+((~op_code[5])&(~op_code[4])&(~op_code[3])&(~op_code[2])&(~op_code[1])&(~op_cod e [0])) | // 000000
+((~op_code[5])&(~op_code[4])&(op_code[3])&(op_code[2])&(~op_code[1])&(~op_code[0
+] )) | // 001100
+((~op_code[5])&(~op_code[4])&(op_code[3])&(~op_code[2])&(~op_code[1])&(~op_code[
+0 ])) | // 001000 ((~op_code[5])&(~op_code[4])&(op_code[3])&(op_code[2])&(~op_code[1])&(op_code[0])) | // 001101
+((~op_code[5])&(~op_code[4])&(op_code[3])&(~op_code[2])&(op_code[1])&(~op_code[0
+] )); // 001010
+assign ALU_op[0] =
+((~op_code[5])&(~op_code[4])&(~op_code[3])&(op_code[2])&(~op_code[1])&(~op_code[
+0 ])) | // 000100
+((~op_code[5])&(~op_code[4])&(op_code[3])&(op_code[2])&(~op_code[1])&(~op_code[0
+] )) | // 001100
+((~op_code[5])&(~op_code[4])&(op_code[3])&(~op_code[2])&(~op_code[1])&(~op_code[
+0 ])) | // 001000
+((~op_code[5])&(~op_code[4])&(op_code[3])&(op_code[2])&(~op_code[1])&(op_code[0])) | // 001101
+((~op_code[5])&(~op_code[4])&(op_code[3])&(~op_code[2])&(op_code[1])&(~op_code[0
+] )); // 001010
+endmodule
+// ID/EX stage register
+module ID_EX_reg (
+input clk, reset,
+// Hazard control signals - lw, beq input ID_flush_lw_stall, ID_flush_branch,
+// WB control signals input RegWrite_in, MemtoReg_in, // MEM control signals
+input Branch_in, MemRead_in, MemWrite_in, Jump_in,
+// EXE control signals input RegDst_in, ALUSrc_in, input [1:0] ALUOp_in,
+// Addresses, memory and register contents input [31:0] jump_addr_in, pc_inc4_in, input [31:0] reg_read_data1_in, reg_read_data2_in, imm_sign_extended_in,
+input [4:0] IF_ID_register_rs_in, IF_ID_register_rt_in, IF_ID_register_rd_in, input [5:0] IF_ID_funct_in, input [5:0] IF_ID_opcode_in,
+// Corresponding updated outputs output reg RegWrite_out, MemtoReg_out, output reg Branch_out, MemRead_out, MemWrite_out, Jump_out, output reg RegDst_out, ALUSrc_out, output reg [1:0] ALUOp_out, output reg [31:0] jump_addr_out, pc_inc4_out, output reg [31:0] reg_read_data1_out, reg_read_data2_out, imm_sign_extended_out, output reg [4:0] IF_ID_register_rs_out, IF_ID_register_rt_out, IF_ID_register_rd_out, output reg [5:0] IF_ID_funct_out, output reg [5:0] IF_ID_opcode_out);
+always @(posedge clk or posedge reset) begin
+// Async reset - reset WB, MEM and EX control signals to 0 and clear all addr, data and  reg
+content
+if (reset == 1) begin
+RegWrite_out = 1'b0;
+MemtoReg_out = 1'b0;
+Branch_out = 1'b0;
+MemRead_out = 1'b0;
+MemWrite_out = 1'b0;
+Jump_out = 1'b0;
+RegDst_out = 1'b0;
+ALUSrc_out = 1'b0; ALUOp_out = 2'b0;
+jump_addr_out = 32'b0; pc_inc4_out = 32'b0; reg_read_data1_out = 32'b0; reg_read_data2_out = 32'b0; imm_sign_extended_out = 32'b0; IF_ID_register_rs_out = 5'b0;
+IF_ID_register_rt_out = 5'b0;
+IF_ID_register_rd_out = 5'b0;
+IF_ID_funct_out = 6'b0; IF_ID_opcode_out = 6'b0;
+end

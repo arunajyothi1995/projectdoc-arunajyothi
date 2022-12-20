@@ -1,0 +1,57 @@
+module program_counter #(parameter N = 32) (
+input clk, input reset,
+input PCWrite, input [N-1:0] pc_in, output [N-1:0] pc_out);
+// To generate N = 32 instances of d_ff to store the 32-bit input
+genvar i; generate
+for (i = 0; i < N; i = i+1) begin
+d_ff d0 (clk, reset, PCWrite, pc_in[i], pc_out[i]);
+end endgenerate endmodule
+// Instruction memory - consisting of 32 entries - instructions commented
+// NOTE - valid range of read addr/4 is from 0 to 31
+module instruction_memory (
+input reset, input[31:0] read_addr, output [31:0] instruction);
+reg [31:0] inst_memory [0:31]; // instruction memory size - 32
+wire [29:0] shifted_read_addr; // byte address assign shifted_read_addr = read_addr [31:2]; // word address assign instruction = inst_memory [shifted_read_addr];
+integer i;
+always @(posedge reset) begin
+for (i=0; i<32; i=i+1)
+begin inst_memory[i] = 32'b0; end inst_memory[0] = 32'b00000000000000000000000000000000; // nop
+inst_memory[1] = 32'b100011_00000_10001_0000000000001000; // lw $s1($17),  8($0) inst_memory[2] = 32'b100011_00000_10010_0000000000000100; // lw $s2($18),  4($0) inst_memory[3] = 32'b101011_10011_00000_0000000000001100; // sw $s3($19),  12($0) inst_memory[4] = 32'b000100_10001_10001_0000000000000010; // beq inst_memory[5] = 32'b00000000000000000000000000000000; // nop inst_memory[6] = 32'b00000000000000000000000000000000; // nop
+inst_memory[7] = 32'b000000_10001_10010_01000_00000_100000; // add $t0($8),
+$s1($17), $s2($18)
+inst_memory[8] = 32'b000000_10001_10010_01001_00000_100010; // sub $t1($9),
+$s1($17), $s2($18)
+inst_memory[9] = 32'b000000_10001_10010_01010_00000_100100; // and $t2($10),
+$s1($17), $s2($18)
+inst_memory[10] = 32'b000000_10001_10010_01011_00000_100101; // or $t3($11),
+$s1($17), $s2($18)
+inst_memory[11] = 32'b000000_10001_10010_01100_00000_101010; // slt $t4($12),
+$s1($17), $s2($18)
+inst_memory[12] = 32'b001000_10001_01101_0000000000001111; // addi $t5($13),
+$s1($17), 15
+inst_memory[13] = 32'b001100_10001_01110_1010101010101010; // andi $t6($14),
+$s1($17), 43690
+inst_memory[14] = 32'b001101_10001_01111_1111000011110000; // ori $t7($15),
+$s1($17), 61680
+inst_memory[15] = 32'b001010_10001_10100_0000000000000000; // slti $s4($20),
+$s1($17), 0 inst_memory[16] = 32'b000100_10001_10010_0000000000000100; // beq inst_memory[17] = 32'b00000000000000000000000000000000; // nop inst_memory[18] = 32'b00000000000000000000000000000000; // nop inst_memory[19] = 32'b00000000000000000000000000000000; // nop inst_memory[20] = 32'b00000000000000000000000000000000; // nop inst_memory[21] = 32'b00000000000000000000000000000000; // nop inst_memory[22] = 32'b00000000000000000000000000000000; // nop inst_memory[23] = 32'b00000000000000000000000000000000; // nop inst_memory[24] = 32'b00000000000000000000000000000000; // nop inst_memory[25] = 32'b00000000000000000000000000000000; // nop inst_memory[26] = 32'b00000000000000000000000000000000; // nop inst_memory[27] = 32'b00000000000000000000000000000000; // nop inst_memory[28] = 32'b00000000000000000000000000000000; // nop inst_memory[29] = 32'b00000000000000000000000000000000; // nop inst_memory[30] = 32'b00000000000000000000000000000000; // nop inst_memory[31] = 32'b00000000000000000000000000000000; // nop  end endmodule
+// MIPS ALU 32-bit - performs operation corresponding to the ALU control signal. It is used for -
+// A. PC updation as an adder (ALU always wired to add the 2 32?bit inputs and place the sum on its output.
+// B. Arithmetic and Logical operations for executing instructions - appropriate ALU control must be designed for
+// the instruction set considered for execution.
+module ALU_32_bit (
+input [3:0] ALU_ctrl, input [31:0] A, B, output reg [31:0] result, output reg carry_out, output zero);
+always @ (ALU_ctrl, A, B) begin case(ALU_ctrl)
+0: result <= A & B;
+1: result <= A | B;
+2: {carry_out, result[31:0]} <= A + B;
+6: {carry_out, result[31:0]} <= A - B;
+7: result <= A < B ? 1 : 0; 12: result <= ~(A | B); default: result <= 0; endcase end
+assign zero = (({result} == 0)) ? 1 : 0;
+endmodule
+module ALU_testbench;
+// inputs
+reg [3:0] ALU_ctrl; reg [31:0] A, B;
+// outputs wire [31:0] result; wire carry_out, zero;
+// instantiate module
+ALU_32_bit u (.zero(zero), .carry_out(carry_out), .result(result), .A(A), .B(B), .ALU_ctrl(ALU_ctrl));

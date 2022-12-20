@@ -1,0 +1,31 @@
+$monitor($time, " :A = %b,\n\t B = %b,\n\t ALU_ctrlerartion = %b,\n\t Result = %b,\n\t Carry Out = %b,\n\t Zero = %b.", A, B, ALU_ctrl, result, carry_out, zero);
+#0 A = 32'ha5a5a5a5; B = 32'h5a5a5a5a; ALU_ctrl = 4'b0000; // AND resulting in 00000000 (0000 0000 0000 0000 0000 0000 0000 0000)
+#10 ALU_ctrl = 4'b0001; // OR resulting in FFFFFFFF(1111  1111 1111 1111 1111 1111 1111 1111)
+#10 ALU_ctrl = 4'b0010; // ADD resulting in FFFFFFFF (1111  1111 1111 1111 1111 1111 1111 1111)
+#10 ALU_ctrl = 4'b0110; // SUB resulting in 4B4B4B4B (0100  1011 0100 1011 0100 1011 0100 1011)
+#10 A = 32'hA5A5A5A5; B = 32'hA5A5A5A5; ALU_ctrl = 4'b0110; // SUB
+resulting in 00000000 (0000 0000 0000 0000 0000 0000 0000 0000) -- Check for zero
+#10 B = 32'hA5A5A5A5; A = 32'h5A5A5A5A; ALU_ctrl = 4'b0111; // SLT resulting  in 00000001 (0000 0000 0000 0000 0000 0000 0000 0001)
+#10 B = 32'hA5A5A5A5; A = 32'h5A5A5A5A; ALU_ctrl = 4'b1100; // NOR resulting in 00000000(0000 0000 0000 0000 0000 0000 0000 0000)
+#20 $finish; end
+endmodule
+// N-bit MUX - selects one of the two N-bit inputs provided to MUX depending on the control signal generated
+module mux_N_bit #(parameter N = 32)(
+input [N-1:0] in0, input [N-1:0] in1, input select, output [N-1:0] mux_out);
+assign mux_out = select ? in1 : in0;
+endmodule
+// IF/ID stage register
+module IF_ID_reg (
+input clk,
+input reset, input IF_ID_write, // Hazard control - updation input IF_flush, // Hazard control - flush input [31:0] pc_inc4_in, input [31:0] instruction_in, output reg [31:0] pc_inc4_out, output reg [31:0] instruction_out);
+always @(posedge clk or posedge reset) begin
+// Async reset sets PC register content and exe instruction addr to 0  if
+(reset == 1) begin pc_inc4_out <= 32'b0; instruction_out <= 32'b0;
+end
+// If IF_flush is set, flush all content else if (IF_flush == 1) begin pc_inc4_out <= 32'b0; instruction_out <= 32'b0;
+end
+// If IF_ID_write is set update PC and instruction value for this posedge else if (IF_ID_write == 1) begin
+pc_inc4_out <= pc_inc4_in;
+instruction_out <= instruction_in;
+end end
+endmodule
